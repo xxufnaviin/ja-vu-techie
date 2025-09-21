@@ -35,12 +35,24 @@ opensearch = OpenSearch(
 )
 
 # Document to insert
-doc = {
-    "title": "Health Tip",
-    "content": "Drink at least 8 glasses of water daily to stay hydrated.",
-    "timestamp": "2025-09-21T09:00:00"
-}
+# doc = {
+#     "title": "Health Tip",
+#     "content": "Drink at least 8 glasses of water daily to stay hydrated.",
+#     "timestamp": "2025-09-21T09:00:00"
+# }
 
-# Insert document
-response = opensearch.index(index=OPENSEARCH_INDEX, body=doc)
-print("✅ Indexed doc:", response)
+docs = [
+  {
+    "title": "Patient shanshan Record",
+    "content": "a famous youngster suffer with stress because he looks very handsome",
+    "timestamp": "2025-09-10T09:00:00"
+  },
+]
+
+
+
+
+
+for doc in docs:
+    response = opensearch.index(index=OPENSEARCH_INDEX, body=doc)
+    print("Indexed doc:", response)

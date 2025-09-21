@@ -67,10 +67,10 @@ app.add_middleware(
 
 class QueryIn(BaseModel):
     question: str
-    top_k: int = 3
+    top_k: int = 50
 
 # ------------------ Helper Functions ------------------
-def search_opensearch(query: str, top_k: int = 3) -> List[str]:
+def search_opensearch(query: str, top_k: int = 50) -> List[str]:
     """
     Search OpenSearch for relevant document snippets.
     """
@@ -84,7 +84,8 @@ def search_opensearch(query: str, top_k: int = 3) -> List[str]:
         }
     }
     resp = opensearch.search(index=OPENSEARCH_INDEX, body=body)
-    snippets = [hit["_source"]["content"] for hit in resp["hits"]["hits"]]
+    snippets = [f"{hit['_source']['title']}: {hit['_source']['content']}"for hit in resp["hits"]["hits"]]
+
     return snippets
 
 def call_bedrock(prompt: str):

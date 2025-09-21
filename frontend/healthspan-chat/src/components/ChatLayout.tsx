@@ -112,32 +112,36 @@ const ChatLayout = () => {
   );
 
   const MessageBubble = ({ message }: { message: Message }) => (
-    <div
-      className={cn(
-        "flex mb-6",
-        message.sender === 'user' ? 'justify-end' : 'justify-start'
-      )}
-    >
+    <div className={cn("flex mb-6", message.sender === "user" ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[85%] px-4 py-3 text-sm leading-relaxed",
-          message.sender === 'user' 
-            ? 'chat-message-user ml-12' 
-            : 'chat-message-ai mr-12 card-shadow'
+          "max-w-[85%] px-4 py-3 text-sm leading-relaxed break-words overflow-hidden rounded-lg",
+          message.sender === "user" ? "bg-primary text-primary-foreground ml-12" : "bg-muted mr-12 shadow-sm",
         )}
       >
         <div className="flex items-start gap-3">
-          {message.sender === 'ai' && (
-            <div className="w-6 h-6 rounded-full medical-gradient flex items-center justify-center flex-shrink-0 mt-0.5">
+          {message.sender === "ai" && (
+            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Stethoscope className="w-3 h-3 text-white" />
             </div>
           )}
-          <div className="flex-1">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {message.content}
-            </ReactMarkdown>
+          <div className="flex-1 min-w-0 overflow-wrap-anywhere">
+            <div className="prose prose-sm max-w-none break-words">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({ children }) => <p className="break-words whitespace-pre-wrap">{children}</p>,
+                  code: ({ children }) => <code className="break-all">{children}</code>,
+                  pre: ({ children }) => (
+                    <pre className="whitespace-pre-wrap break-words overflow-x-auto">{children}</pre>
+                  ),
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
           </div>
-          {message.sender === 'user' && (
+          {message.sender === "user" && (
             <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
               <Users className="w-3 h-3 text-muted-foreground" />
             </div>
@@ -145,7 +149,7 @@ const ChatLayout = () => {
         </div>
       </div>
     </div>
-  );
+  )
 
   return (
     <div className="min-h-screen w-full flex flex-col">
