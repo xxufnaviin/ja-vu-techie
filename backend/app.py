@@ -1,7 +1,10 @@
+from asyncio.windows_events import NULL
 import os
 import json
+import select
 import boto3
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from opensearchpy import OpenSearch, RequestsHttpConnection
@@ -54,6 +57,14 @@ opensearch = OpenSearch(
 # ------------------ FastAPI ------------------
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 class QueryIn(BaseModel):
     question: str
     top_k: int = 3
@@ -78,17 +89,13 @@ def search_opensearch(query: str, top_k: int = 3) -> List[str]:
 
 def call_bedrock(prompt: str):
     # Call AWS Bedrock LLM with a given prompt.
-    payload = {
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"text": str(prompt)} 
-                ]
-            }
-        ]
-    }
-    
+    if "amazon.nova" in BEDROCK_MODEL_LLM:
+        payload = {"messages": [{"role": "user","content": [{"text": str(prompt)}]}]}
+    elif "meta.llama" in BEDROCK_MODEL_LLM:
+        payload = {"prompt": prompt,"max_gen_len": 512,"temperature": 0.7,"top_p": 0.9,}
+    else:
+        payload = {}
+
     response = bedrock.invoke_model(
         modelId=BEDROCK_MODEL_LLM,
         contentType="application/json",
@@ -97,7 +104,13 @@ def call_bedrock(prompt: str):
     )
 
     output = json.loads(response["body"].read().decode("utf-8"))
-    return output
+
+    if "amazon.nova" in BEDROCK_MODEL_LLM:
+        return output.get("output", {}).get("message", {}).get("content", [{}])[0].get("text", "")
+    elif "meta.llama" in BEDROCK_MODEL_LLM:
+        return output.get("generation","")
+    else:
+        return NULL
 
 # ------------------ API ------------------
 @app.post("/chat")
@@ -108,8 +121,11 @@ def chat(q: QueryIn):
     # Step 2: Construct prompt for Bedrock including retrieved context
     context_text = "\n\n".join(snippets) if snippets else "No relevant documents found."
     prompt = f"""
-    You are a medical AI assistant. Answer the following question using the provided documents. 
-    Only use the information present in the documents.
+    You are a trusted medical AI assistant. 
+    Answer the question directly and accurately, using the documents below as supporting context when relevant. 
+    Provide a clear, factual, and concise response in natural language. 
+    Do not mention the documents explicitly. 
+    If the documents do not contain the needed information, rely on your own medical knowledge to give the best possible answer.
 
     Documents:
     {context_text}
@@ -120,4 +136,4 @@ def chat(q: QueryIn):
 
     # Step 3: Get answer from Bedrock LLM
     answer = call_bedrock(prompt)
-    return {"response": answer, "retrieved_snippets": snippets}
+    return {"response": answer, "retrieved_snippets": snippets, "model": BEDROCK_MODEL_LLM}
