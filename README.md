@@ -10,9 +10,7 @@ Add .env inside /backend (will shared)
 cd backend
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
-
-#start frontend service
+# test use the api
 ```
-cd frontend/healthspan-chat
-npm run dev
+curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d '{"question": "Hello"}'
 ```
